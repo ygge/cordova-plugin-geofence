@@ -1,16 +1,20 @@
 language: objective-c
-osx_image: xcode8
+osx_image: xcode8.2
 env:
   - PATH=$PATH:$TRAVIS_BUILD_DIR/node_modules/.bin
 git:
   depth: 2
 node_js:
-  - "4.1"
+  - "6"
 install:
   - npm install -g ios-sim
   - npm install -g ios-deploy
   - npm install
 before_script:
   - ios-sim start --devicetypeid=iPhone-6
+  - cordova create test
+  - cd test
+  - cordova platform add ios
+  - cordova run --list --emulator
 script:
-  - FIX_PARAMEDIC=true cordova-paramedic --platform ios --plugin ${TRAVIS_BUILD_DIR} --verbose
+  - FIX_PARAMEDIC=true cordova-paramedic --platform ios --plugin ${TRAVIS_BUILD_DIR} --verbose --target iPhone
