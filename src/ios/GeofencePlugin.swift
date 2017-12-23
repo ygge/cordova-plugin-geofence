@@ -29,12 +29,6 @@ func log(_ messages: [String]) {
     let priority = DispatchQueue.GlobalQueuePriority.default
 
     override func pluginInitialize () {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(GeofencePlugin.didReceiveLocalNotification(_:)),
-            name: NSNotification.Name(rawValue: "CDVLocalNotification"),
-            object: nil
-        )
 
         NotificationCenter.default.addObserver(
             self,
@@ -46,11 +40,6 @@ func log(_ messages: [String]) {
 
     func initialize(_ command: CDVInvokedUrlCommand) {
         log("Plugin initialization")
-        //let faker = GeofenceFaker(manager: geoNotificationManager)
-        //faker.start()
-        if iOS8 {
-            promptForNotificationPermission()
-        }
 
         geoNotificationManager = GeoNotificationManager()
         geoNotificationManager.registerPermissions()
@@ -83,14 +72,6 @@ func log(_ messages: [String]) {
         log("Ping")
         let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
         commandDelegate!.send(pluginResult, callbackId: command.callbackId)
-    }
-
-    func promptForNotificationPermission() {
-        UIApplication.shared.registerUserNotificationSettings(UIUserNotificationSettings(
-            types: [UIUserNotificationType.sound, UIUserNotificationType.alert, UIUserNotificationType.badge],
-            categories: nil
-            )
-        )
     }
 
     func addOrUpdate(_ command: CDVInvokedUrlCommand) {
@@ -146,21 +127,6 @@ func log(_ messages: [String]) {
             let js = "setTimeout('geofence.onTransitionReceived([" + geoNotificationString + "])',0)"
 
             evaluateJs(js)
-        }
-    }
-
-    func didReceiveLocalNotification (_ notification: Notification) {
-        log("didReceiveLocalNotification")
-        if UIApplication.shared.applicationState != UIApplicationState.active {
-            var data = "undefined"
-            if let uiNotification = notification.object as? UILocalNotification {
-                if let notificationData = uiNotification.userInfo?["geofence.notification.data"] as? String {
-                    data = notificationData
-                }
-                let js = "setTimeout('geofence.onNotificationClicked(" + data + ")',0)"
-
-                evaluateJs(js)
-            }
         }
     }
 
@@ -285,28 +251,6 @@ class GeoNotificationManager : NSObject, CLLocationManagerDelegate {
 
         if (authStatus != CLAuthorizationStatus.authorizedAlways) {
             errors.append("Warning: Location always permissions not granted")
-        }
-
-        if (iOS8) {
-            if let notificationSettings = UIApplication.shared.currentUserNotificationSettings {
-                if notificationSettings.types == UIUserNotificationType() {
-                    errors.append("Error: notification permission missing")
-                } else {
-                    if !notificationSettings.types.contains(.sound) {
-                        warnings.append("Warning: notification settings - sound permission missing")
-                    }
-
-                    if !notificationSettings.types.contains(.alert) {
-                        warnings.append("Warning: notification settings - alert permission missing")
-                    }
-
-                    if !notificationSettings.types.contains(.badge) {
-                        warnings.append("Warning: notification settings - badge permission missing")
-                    }
-                }
-            } else {
-                errors.append("Error: notification permission missing")
-            }
         }
 
         let ok = (errors.count == 0)
