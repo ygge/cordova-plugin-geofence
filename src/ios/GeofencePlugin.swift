@@ -55,7 +55,22 @@ func log(_ messages: [String]) {
         let result: CDVPluginResult
         
         if ok {
-            result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: warnings.joined(separator: "\n"))
+            let userDefaults = UserDefaults.standard
+            let numItems = userDefaults.integer(forKey: KEY_NUM)
+            var str = "[";
+            if numItems > 0 {
+                for i in 0..<numItems {
+                    let geoNotificationString = userDefaults.string(forKey: KEY_TRANSITION + String(i))!
+                    if i > 0 {
+                        str += ","
+                    }
+                    str += geoNotificationString
+                }
+                userDefaults.set(0, forKey: KEY_NUM)
+                userDefaults.synchronize()
+            }
+            str += "]";
+            result = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: str)
         } else {
             result = CDVPluginResult(
                 status: CDVCommandStatus_ILLEGAL_ACCESS_EXCEPTION,
@@ -64,23 +79,6 @@ func log(_ messages: [String]) {
         }
         
         commandDelegate!.send(result, callbackId: command.callbackId)
-        
-        let userDefaults = UserDefaults.standard
-        let numItems = userDefaults.integer(forKey: KEY_NUM)
-        if (webView) != nil && numItems > 0 {
-            var str = "";
-            for i in 0..<numItems {
-                let geoNotificationString = userDefaults.string(forKey: KEY_TRANSITION + String(i))!
-                if i > 0 {
-                    str += ","
-                }
-                str += geoNotificationString
-            }
-            let js = "setTimeout('geofence.onTransitionReceived([" + str + "])',500)"
-            evaluateJs(js)
-            userDefaults.set(0, forKey: KEY_NUM)
-            userDefaults.synchronize()
-        }
     }
     
     func deviceReady(_ command: CDVInvokedUrlCommand) {
@@ -144,27 +142,11 @@ func log(_ messages: [String]) {
         log("didReceiveTransition")
         if let geoNotificationString = notification.object as? String {
             
-            //let js = "setTimeout('geofence.onTransitionReceived([" + geoNotificationString + "])',0)"
-            
-            //evaluateJs(js)
-            
             let userDefaults = UserDefaults.standard
             let numItems = userDefaults.integer(forKey: KEY_NUM)
             userDefaults.set(geoNotificationString, forKey: KEY_TRANSITION + String(numItems))
             userDefaults.set(numItems + 1, forKey: KEY_NUM)
             userDefaults.synchronize()
-        }
-    }
-    
-    func evaluateJs (_ script: String) {
-        if let webView = webView {
-            if let uiWebView = webView as? UIWebView {
-                uiWebView.stringByEvaluatingJavaScript(from: script)
-            } else if let wkWebView = webView as? WKWebView {
-                wkWebView.evaluateJavaScript(script, completionHandler: nil)
-            }
-        } else {
-            log("webView is nil")
         }
     }
 }
