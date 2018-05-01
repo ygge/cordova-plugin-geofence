@@ -141,10 +141,13 @@ func log(_ messages: [String]) {
     func didReceiveTransition (_ notification: Notification) {
         log("didReceiveTransition")
         if let geoNotificationString = notification.object as? String {
-            
+            let stringWithTime = geoNotificationString.substring(to: geoNotificationString.index(before: geoNotificationString.endIndex))
+                + ",\"epoch\":"
+                + String(Int(Date().timeIntervalSince1970 * 1000))
+                + "}";
             let userDefaults = UserDefaults.standard
             let numItems = userDefaults.integer(forKey: KEY_NUM)
-            userDefaults.set(geoNotificationString, forKey: KEY_TRANSITION + String(numItems))
+            userDefaults.set(stringWithTime, forKey: KEY_TRANSITION + String(numItems))
             userDefaults.set(numItems + 1, forKey: KEY_NUM)
             userDefaults.synchronize()
         }
